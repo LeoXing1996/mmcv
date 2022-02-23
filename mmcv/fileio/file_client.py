@@ -5,6 +5,7 @@ import os.path as osp
 import re
 import tempfile
 import warnings
+import zipfile
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
@@ -727,6 +728,25 @@ class HTTPBackend(BaseStorageBackend):
             os.remove(f.name)
 
 
+class ZipBackend(BaseStorageBackend):
+    """Zip storage backend.
+
+    Args:
+        zip_path (str): The path to the zip file.
+    """
+
+    def __init__(self, zip_path):
+        self._zipfile = zipfile.ZipFile(zip_path)
+
+    def get(self, filepath):
+        with self._zipfile.open(filepath, 'r') as file:
+            bytes_ = file.read()
+        return bytes_
+
+    def get_text(self, filepath):
+        raise NotImplementedError
+
+
 class FileClient:
     """A general file client to access files in different backends.
 
@@ -770,6 +790,7 @@ class FileClient:
         'lmdb': LmdbBackend,
         'petrel': PetrelBackend,
         'http': HTTPBackend,
+        'zip': ZipBackend
     }
     # This collection is used to record the overridden backends, and when a
     # backend appears in the collection, the singleton pattern is disabled for
